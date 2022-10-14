@@ -4,6 +4,7 @@ using UnityEngine;
 using System.IO;
 using System;
 using System.Xml;
+using System.Xml.Serialization;
 
 public class DataManager : MonoBehaviour, IManager
 {
@@ -13,8 +14,17 @@ public class DataManager : MonoBehaviour, IManager
     private string _streamingTextFile;
     private string _xmlLevelProgress;
 
-    public string State
+    private string _xmlWeapons;
+    private List<Weapon> weaponInventory = new List<Weapon>
     {
+        new Weapon("Sword of Doom, ", 100),
+        new Weapon("Butterfly knives", 25),
+        new Weapon("Brass Knuckles", 15),
+        new Weapon("Haihaihai", 2)
+    };
+
+    public string State
+    {   
         get { return _state; }
         set { _state = value; } 
     }
@@ -28,6 +38,7 @@ public class DataManager : MonoBehaviour, IManager
         _textFile = _dataPath + "Save_Data.txt";
         _streamingTextFile = _dataPath + "Streaming_Save_Data.txt";
         _xmlLevelProgress = _dataPath + "Progress_Data.xml";
+        _xmlWeapons = _dataPath + "WeaponInventory.xml";
     }
 
     void Start()
@@ -41,12 +52,32 @@ public class DataManager : MonoBehaviour, IManager
         Debug.Log(_state);
 
         NewDirectory();
-        NewTextFile();
+        //NewTextFile();
         // UpdateTextFile();
-        WriteToStream(_streamingTextFile);
+        //WriteToStream(_streamingTextFile);
         // ReadFromFile(_textFile);
-        ReadFromStream(_streamingTextFile);
+        //ReadFromStream(_streamingTextFile);
+        WriteToXML(_xmlLevelProgress);
+        SerializeXML();
+        DeserializeXML();
     }
+
+
+    [Serializable]
+    public struct Weapon
+    {
+        public string name;
+        public int dmg;
+
+        public Weapon(string name, int dmg)
+        {
+            this.name = name;
+            this.dmg = dmg;
+        }
+    }
+
+
+
 
     // This method display the filesystem's info
     private void FilesystemInfo()
@@ -156,6 +187,54 @@ public class DataManager : MonoBehaviour, IManager
 
     public void WriteToXML(String filename)
     {
+        if (!File.Exists(filename))
+        {
+            FileStream xmlStream = File.Create(filename);
 
+            XmlWriter xmlWriter = XmlWriter.Create(xmlStream);
+
+            xmlWriter.WriteStartDocument(); // specify XML version 1.0
+
+            xmlWriter.WriteStartElement("level_progress");  // starting level tag
+
+            for (int i = 1; i < 5; i++)
+            {
+                xmlWriter.WriteElementString("level", "level-" + i);
+            }
+
+            xmlWriter.WriteEndElement();    // closing level tag
+
+            xmlWriter.Close();
+            xmlStream.Close();
+        }
+    }
+
+
+    public void SerializeXML()
+    {
+        var xmlSerializer = new XmlSerializer(typeof(List<Weapon>));
+
+        using(FileStream stream = File.Create(_xmlWeapons))
+        {
+            xmlSerializer.Serialize(stream, weaponInventory);
+        }
+    }
+
+    public void DeserializeXML()
+    {
+        if (File.Exists(_xmlWeapons))
+        {
+            var xmlSerializer = new XmlSerializer(typeof(List<Weapon>));
+
+            using(FileStream stream = File.OpenRead(_xmlWeapons))
+            {
+                var weapons = (List<Weapon>)xmlSerializer.Deserialize(stream);
+
+                foreach(var weapon in weapons)
+                {
+                    Debug.LogFormat("Weapon: {0} - Damage: {1}", weapon.name, weapon.dmg);
+                }
+            }
+        }
     }
 }
