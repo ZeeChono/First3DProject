@@ -5,6 +5,25 @@ using System.IO;
 using System;
 using System.Xml;
 using System.Xml.Serialization;
+using System.Text;
+[Serializable]
+public struct Weapon
+{
+    public string name;
+    public int dmg;
+
+    public Weapon(string name, int dmg)
+    {
+        this.name = name;
+        this.dmg = dmg;
+    }
+}
+
+[Serializable]
+public class WeaponShop
+{
+    public List<Weapon> inventory;
+}
 
 public class DataManager : MonoBehaviour, IManager
 {
@@ -13,6 +32,7 @@ public class DataManager : MonoBehaviour, IManager
     private string _textFile;
     private string _streamingTextFile;
     private string _xmlLevelProgress;
+    private string _jsonWeapons;
 
     private string _xmlWeapons;
     private List<Weapon> weaponInventory = new List<Weapon>
@@ -39,6 +59,7 @@ public class DataManager : MonoBehaviour, IManager
         _streamingTextFile = _dataPath + "Streaming_Save_Data.txt";
         _xmlLevelProgress = _dataPath + "Progress_Data.xml";
         _xmlWeapons = _dataPath + "WeaponInventory.xml";
+        _jsonWeapons = _dataPath + "WeaponJSON.json";
     }
 
     void Start()
@@ -60,23 +81,9 @@ public class DataManager : MonoBehaviour, IManager
         WriteToXML(_xmlLevelProgress);
         SerializeXML();
         DeserializeXML();
+        SerializeJSON();
+        DeserializeJSON();
     }
-
-
-    [Serializable]
-    public struct Weapon
-    {
-        public string name;
-        public int dmg;
-
-        public Weapon(string name, int dmg)
-        {
-            this.name = name;
-            this.dmg = dmg;
-        }
-    }
-
-
 
 
     // This method display the filesystem's info
@@ -237,4 +244,33 @@ public class DataManager : MonoBehaviour, IManager
             }
         }
     }
+
+    public void SerializeJSON()
+    {
+        WeaponShop shop = new WeaponShop();
+        shop.inventory = weaponInventory;
+        string jsonString = JsonUtility.ToJson(shop, true);
+        using(StreamWriter stream = File.CreateText(_jsonWeapons))
+        {
+            stream.WriteLine(jsonString);
+        }
+    }
+
+    public void DeserializeJSON()
+    {
+        if (File.Exists(_jsonWeapons))
+        {
+            using(StreamReader stream = new StreamReader(_jsonWeapons))
+            {
+                string jsonString = stream.ReadToEnd();
+                WeaponShop weaponData = JsonUtility.FromJson<WeaponShop>(jsonString);
+                foreach(var weapon in weaponData.inventory)
+                {
+                    Debug.LogFormat("Weapon: {0} - Damage: {1}", weapon.name, weapon.dmg);
+                }
+            }
+        }
+    }
 }
+
+
