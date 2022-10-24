@@ -16,7 +16,6 @@ public class PlayerBehaviour : MonoBehaviour
     [SerializeField] private Transform SpawnBulletPosition;     // gameobject of bullets
     
 
-
     private float _vInput;          // W/S, up/down
     private float _hInput;          // A/D, left/right
     private bool _isJumping;        // boolean to determine when space is pressed
@@ -28,6 +27,11 @@ public class PlayerBehaviour : MonoBehaviour
 
     // game manager
     private GameBehaviour _gameManager;
+
+    // delegate event
+    public delegate void JumpingEvent();
+    
+    public event JumpingEvent playerJump;       // declare an event using delegate type
 
     void Start()
     {
@@ -66,6 +70,7 @@ public class PlayerBehaviour : MonoBehaviour
         {
             Debug.Log("player collider y:" + _col.bounds.min.y);
             _rb.AddForce(Vector3.up * JumpVelocity, ForceMode.Impulse);
+            playerJump();       // fire the event
         }
         _isJumping = false;
         if (_isShooting)
@@ -76,6 +81,8 @@ public class PlayerBehaviour : MonoBehaviour
             BulletRB.velocity = this.transform.forward * BulletSpeed;
         }      
         _isShooting = false;
+
+        
     }
 
     private bool IsGrounded()

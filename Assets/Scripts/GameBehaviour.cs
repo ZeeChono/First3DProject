@@ -22,6 +22,13 @@ public class GameBehaviour : MonoBehaviour, IManager
     [SerializeField] private Button WinButton;
     [SerializeField] private Button LossButton;
 
+    // delegate
+    public delegate void DebugDelegate(string newText);         // return void and use str as argument
+    public DebugDelegate debug = Print;
+
+    // event handling
+    public PlayerBehaviour playerBehavior;
+
     public string State
     {
         get { return _state; }
@@ -31,15 +38,15 @@ public class GameBehaviour : MonoBehaviour, IManager
     public void Initialize()
     {
         _state = "Game Manager Initialized";
-        Debug.Log(_state);
+        debug(_state);
 
         LootStack.Push("Sword of Doom");
         LootStack.Push("HP Boost");
         LootStack.Push("Golden Key");
         LootStack.Push("Pair of Winged Boots");
         LootStack.Push("Mytheril Bracer");
-        
 
+        LogWithDelegate(debug);
     }
 
     void Start()
@@ -53,6 +60,22 @@ public class GameBehaviour : MonoBehaviour, IManager
     {
         ProgressText.text = updatedText;
         Time.timeScale = 0f;
+    }
+
+    void OnEnable(){
+        GameObject player = GameObject.Find("Player");
+        playerBehavior = player.GetComponent<PlayerBehaviour>();
+        playerBehavior.playerJump += HandlePlayerJump;      // someclass.eventinstance += EventHandler
+        debug("Jump event subscribed");
+    }
+
+    private void OnDisable(){
+        playerBehavior.playerJump -= HandlePlayerJump;
+        debug("Jump event unsubscribed...");
+    }
+
+    public void HandlePlayerJump(){
+        debug("Player has jumped...");
     }
 
     // gets and sets
@@ -113,5 +136,14 @@ public class GameBehaviour : MonoBehaviour, IManager
         var nextItem = LootStack.Peek();
         Debug.LogFormat("You got a {0}! You've got a good chance of finding a {1} next!", currentItem, nextItem);
         Debug.LogFormat("There are {0} random loot items waiting for you!", LootStack.Count);
+    }
+
+    // Print method for debugging
+    public static void Print(string newText){
+        Debug.Log(newText);
+    }
+
+    public void LogWithDelegate(DebugDelegate del){
+        del("Delegating the debug task...");
     }
 }
